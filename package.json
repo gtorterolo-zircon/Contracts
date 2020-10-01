@@ -29,6 +29,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@truffle/hdwallet-provider": "^1.1.0",
     "bignumber.js": "8.0.2",
     "fixidity": "file:../Fixidity",
     "openzeppelin-solidity": "^2.2.0"
