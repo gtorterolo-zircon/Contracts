@@ -71,13 +71,12 @@ const depositTest = async (
     );
 };
 
-contract('MIXR 2 tokens', (accounts) => {
+contract('MIXR many tokens', (accounts) => {
     let mixr;
     let whitelist;
     let fees;
     let fixidityLibMock;
-    let sampleDetailedERC20;
-    let samplePlainERC20;
+    let sampleDetailedERC20s;
     let sampleDetailedERC20Other;
     let someERC721;
     const sampleERC20Decimals = 18;
@@ -117,50 +116,33 @@ contract('MIXR 2 tokens', (accounts) => {
 
             const ERC20TotalSupply = 100;
 
-            sampleDetailedERC20 = await SampleDetailedERC20.new(
-                governor,
-                tokenNumber(sampleERC20Decimals, ERC20TotalSupply),
-                sampleERC20Decimals,
-                'SAMPLE',
-                'SMP',
-            );
-            await mixr.registerDetailedToken(sampleDetailedERC20.address, {
-                from: governor,
-            });
-            await sampleDetailedERC20.transfer(
-              user,
-              tokenNumber(sampleERC20Decimals, ERC20TotalSupply),
-              { from: governor },
-            );
-
-            samplePlainERC20 = await SamplePlainERC20.new(
-                governor,
-                tokenNumber(sampleERC20Decimals, ERC20TotalSupply),
-            );
-            await mixr.registerStandardToken(
-              samplePlainERC20.address,
-              'PLAIN',
-              'PLN',
-              sampleERC20Decimals,
-              {
-                from: governor,
-              }
-            );
-            await samplePlainERC20.transfer(
-              user,
-              tokenNumber(sampleERC20Decimals, ERC20TotalSupply),
-              { from: governor },
-            );
+            const TOKEN_QUANTITY = 4;
+            sampleDetailedERC20s = await Promise.all(new Array(TOKEN_QUANTITY).fill(null).map(
+                async (aux, ii) => {
+                    const sampleDetailedERC20 = await SampleDetailedERC20.new(
+                        governor,
+                        tokenNumber(sampleERC20Decimals, ERC20TotalSupply),
+                        sampleERC20Decimals,
+                        `SAMPLE${ii}`,
+                        `SMP${ii}`,
+                    );
+                    await mixr.registerDetailedToken(sampleDetailedERC20.address, {
+                        from: governor,
+                    });
+                    await sampleDetailedERC20.transfer(
+                        user,
+                        tokenNumber(sampleERC20Decimals, ERC20TotalSupply),
+                        { from: governor },
+                    );
+                    return sampleDetailedERC20;
+                }
+            ));
 
             await mixr.setTokensTargetProportion(
-                [
-                  sampleDetailedERC20.address,
-                  samplePlainERC20.address,
-                ],
-                [
-                  fixed1.dividedBy(2).toString(10),
-                  fixed1.dividedBy(2).toString(10),
-                ],
+                sampleDetailedERC20s.map(
+                    (contract) => contract.address
+                ),
+                new Array(TOKEN_QUANTITY).fill(fixed1.dividedBy(TOKEN_QUANTITY).toString(10)),
                 {
                     from: governor,
                 },
@@ -204,7 +186,7 @@ contract('MIXR 2 tokens', (accounts) => {
                  * should fail because it is not authorized yet.
                  */
                 await mixr.depositToken(
-                    sampleDetailedERC20.address,
+                    sampleDetailedERC20s[0].address,
                     tokenNumber(sampleERC20Decimals, 1),
                     {
                         from: user2,
@@ -259,13 +241,13 @@ contract('MIXR 2 tokens', (accounts) => {
 
         it('depositToken(50)', async () => {
             await depositTest(
-                50, user, stakeholders, sampleDetailedERC20, sampleERC20Decimals, mixr, mixrDecimals, DEPOSIT,
+                50, user, stakeholders, sampleDetailedERC20s[0], sampleERC20Decimals, mixr, mixrDecimals, DEPOSIT,
             );
         });
 
         it('depositToken(1)', async () => {
             await depositTest(
-                1, user, stakeholders, sampleDetailedERC20, sampleERC20Decimals, mixr, mixrDecimals, DEPOSIT,
+                1, user, stakeholders, sampleDetailedERC20s[0], sampleERC20Decimals, mixr, mixrDecimals, DEPOSIT,
             );
         });
     });
